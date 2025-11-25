@@ -8,17 +8,23 @@ function Notes({ onLogout }) {
     tag: 'General'
   });
   const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [viewMode, setViewMode] = useState('grid');
 
   useEffect(() => {
     fetchNotes();
   }, []);
 
-  const fetchNotes = async () => {
+  const fetchNotes = async (page = 1) => {
     try {
-      const response = await fetch('http://localhost:3000/api/notes');
+      const response = await fetch(`http://localhost:3000/api/notes?page=${page}&limit=2`);
       if (response.ok) {
         const data = await response.json();
-        setNotes(data);
+        setNotes(data.notes || data);
+        setTotalPages(data.totalPages || 1);
+        setCurrentPage(page);
       }
     } catch (error) {
       console.error('Error fetching notes:', error);
@@ -48,6 +54,7 @@ function Notes({ onLogout }) {
       if (response.ok) {
         setFormData({ title: '', description: '', tag: 'General' });
         setEditingId(null);
+        setShowForm(false);
         fetchNotes();
         alert(editingId ? 'Note updated successfully!' : 'Note added successfully!');
       } else {
@@ -62,6 +69,7 @@ function Notes({ onLogout }) {
   const handleEdit = (note) => {
     setFormData({ title: note.title, description: note.description, tag: note.tag });
     setEditingId(note._id);
+    setShowForm(true);
   };
 
   const handleDelete = async (id) => {
@@ -83,6 +91,7 @@ function Notes({ onLogout }) {
   const handleCancel = () => {
     setFormData({ title: '', description: '', tag: 'General' });
     setEditingId(null);
+    setShowForm(false);
   };
 
   const styles = {
@@ -96,7 +105,9 @@ function Notes({ onLogout }) {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: '30px'
+      marginBottom: '30px',
+      flexWrap: 'wrap',
+      gap: '15px'
     },
     title: {
       color: 'white',
@@ -117,7 +128,9 @@ function Notes({ onLogout }) {
       padding: '30px',
       borderRadius: '12px',
       boxShadow: '0 15px 35px rgba(0,0,0,0.1)',
-      marginBottom: '30px'
+      marginBottom: '30px',
+      position: 'sticky',
+      top: '20px'
     },
     inputGroup: {
       marginBottom: '20px'
@@ -203,35 +216,101 @@ function Notes({ onLogout }) {
     deleteBtn: {
       backgroundColor: '#dc3545',
       color: 'white'
+    },
+    pagination: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: '10px',
+      marginTop: '30px'
+    },
+    pageBtn: {
+      padding: '8px 12px',
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer'
+    },
+    activePageBtn: {
+      backgroundColor: 'white',
+      color: '#667eea'
+    },
+    viewToggle: {
+      display: 'flex',
+      gap: '5px',
+      marginLeft: '10px'
+    },
+    viewBtn: {
+      padding: '8px 12px',
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontSize: '12px'
+    },
+    activeViewBtn: {
+      backgroundColor: 'white',
+      color: '#667eea'
+    },
+    listView: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '15px'
+    },
+    listCard: {
+      backgroundColor: 'white',
+      padding: '15px',
+      borderRadius: '8px',
+      boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    },
+    listContent: {
+      flex: 1
+    },
+    listTitle: {
+      fontSize: '16px',
+      fontWeight: '600',
+      marginBottom: '5px',
+      color: '#333'
+    },
+    listDescription: {
+      color: '#666',
+      fontSize: '14px',
+      marginBottom: '5px'
     }
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>My Notes</h1>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <img src="/logo.png" alt="Logo" style={{ width: '40px', height: '40px' }} />
+          <h1 style={styles.title}>MY LATEST NOTES</h1>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+          <div style={styles.viewToggle}>
+            <button 
+              onClick={() => setViewMode('grid')}
+              style={{...styles.viewBtn, ...(viewMode === 'grid' ? styles.activeViewBtn : {})}}
+            >
+              ⊞ Grid
+            </button>
+            <button 
+              onClick={() => setViewMode('list')}
+              style={{...styles.viewBtn, ...(viewMode === 'list' ? styles.activeViewBtn : {})}}
+            >
+              ☰ List
+            </button>
+          </div>
           <button 
-            onClick={async () => {
-              try {
-                const response = await fetch('http://localhost:3000/api/notes', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ title: 'Test', description: 'Test desc', tag: 'Test' })
-                });
-                if (response.ok) {
-                  alert('Test note created!');
-                  fetchNotes();
-                } else {
-                  alert('Test failed');
-                }
-              } catch (e) {
-                alert('Connection error: ' + e.message);
-              }
-            }}
-            style={{...styles.logoutBtn, marginRight: '10px'}}
+            onClick={() => setShowForm(true)}
+            style={styles.logoutBtn}
           >
-            Test API
+            Add Note
           </button>
           <button style={styles.logoutBtn} onClick={onLogout}>
             Logout
@@ -239,7 +318,8 @@ function Notes({ onLogout }) {
         </div>
       </div>
 
-      <div style={styles.formCard}>
+      {showForm && (
+        <div style={styles.formCard}>
         <form onSubmit={handleSubmit}>
           <div style={styles.inputGroup}>
             <input
@@ -279,38 +359,94 @@ function Notes({ onLogout }) {
             <button type="submit" style={styles.button}>
               {editingId ? 'Update Note' : 'Add Note'}
             </button>
-            {editingId && (
-              <button type="button" onClick={handleCancel} style={{...styles.button, background: '#6c757d'}}>
-                Cancel
-              </button>
-            )}
+            <button type="button" onClick={handleCancel} style={{...styles.button, background: '#6c757d'}}>
+              Cancel
+            </button>
           </div>
         </form>
-      </div>
+        </div>
+      )}
 
-      <div style={styles.notesGrid}>
+      <div style={viewMode === 'grid' ? styles.notesGrid : styles.listView}>
         {notes.map((note) => (
-          <div key={note._id} style={styles.noteCard}>
-            <div style={styles.noteTitle}>{note.title}</div>
-            <div style={styles.noteDescription}>{note.description}</div>
-            <span style={styles.noteTag}>{note.tag}</span>
-            <div style={styles.noteActions}>
-              <button 
-                onClick={() => handleEdit(note)}
-                style={{...styles.actionBtn, ...styles.editBtn}}
-              >
-                Edit
-              </button>
-              <button 
-                onClick={() => handleDelete(note._id)}
-                style={{...styles.actionBtn, ...styles.deleteBtn}}
-              >
-                Delete
-              </button>
+          viewMode === 'grid' ? (
+            <div key={note._id} style={styles.noteCard}>
+              <div style={styles.noteTitle}>{note.title}</div>
+              <div style={styles.noteDescription}>{note.description}</div>
+              <span style={styles.noteTag}>{note.tag}</span>
+              <div style={styles.noteActions}>
+                <button 
+                  onClick={() => handleEdit(note)}
+                  style={{...styles.actionBtn, ...styles.editBtn}}
+                >
+                  Edit
+                </button>
+                <button 
+                  onClick={() => handleDelete(note._id)}
+                  style={{...styles.actionBtn, ...styles.deleteBtn}}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div key={note._id} style={styles.listCard}>
+              <div style={styles.listContent}>
+                <div style={styles.listTitle}>{note.title}</div>
+                <div style={styles.listDescription}>{note.description}</div>
+                <span style={styles.noteTag}>{note.tag}</span>
+              </div>
+              <div style={styles.noteActions}>
+                <button 
+                  onClick={() => handleEdit(note)}
+                  style={{...styles.actionBtn, ...styles.editBtn}}
+                >
+                  Edit
+                </button>
+                <button 
+                  onClick={() => handleDelete(note._id)}
+                  style={{...styles.actionBtn, ...styles.deleteBtn}}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          )
         ))}
       </div>
+      
+      {totalPages > 1 && (
+        <div style={styles.pagination}>
+          <button 
+            onClick={() => fetchNotes(currentPage - 1)}
+            disabled={currentPage === 1}
+            style={{...styles.pageBtn, opacity: currentPage === 1 ? 0.5 : 1}}
+          >
+            Previous
+          </button>
+          
+          {[...Array(totalPages)].map((_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => fetchNotes(i + 1)}
+              style={{
+                ...styles.pageBtn,
+                ...(currentPage === i + 1 ? styles.activePageBtn : {})
+              }}
+            >
+              {i + 1}
+            </button>
+          ))}
+          
+          <button 
+            onClick={() => fetchNotes(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            style={{...styles.pageBtn, opacity: currentPage === totalPages ? 0.5 : 1}}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

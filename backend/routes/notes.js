@@ -2,11 +2,22 @@ const express = require('express');
 const router = express.Router();
 const Notes = require('../models/Notes');
 
-// Get all notes
+// Get all notes with pagination
 router.get('/', async (req, res) => {
     try {
-        const notes = await Notes.find();
-        res.json(notes);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 2;
+        const skip = (page - 1) * limit;
+        
+        const notes = await Notes.find().sort({ date: -1 }).skip(skip).limit(limit);
+        const total = await Notes.countDocuments();
+        
+        res.json({
+            notes,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page,
+            total
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

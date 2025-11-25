@@ -6,8 +6,8 @@ import Notes from './Notes';
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
+  const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
 
   const toggleForm = () => {
     setShowLogin(!showLogin);
@@ -16,12 +16,16 @@ function App() {
   const handleLoginSuccess = (name) => {
     setUserName(name);
     setIsLoggedIn(true);
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('userName', name);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserName('');
     setShowLogin(true);
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userName');
   };
 
   if (isLoggedIn) {
